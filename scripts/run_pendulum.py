@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 import random
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from envs.pendulum_custom import TargetAnglePendulum
 from agent.sac import SACAgent
 import gymnasium as gym
