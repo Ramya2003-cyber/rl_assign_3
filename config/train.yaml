@@ -26,7 +26,12 @@ save_video: true
 
 seed: 1
 
-
+custom:
+  target_angle: 90
+  reward_scale: 1.0
+  auto_tune: true
+  alpha: 0.1
+  
 # hydra configuration
 hydra:
     name: ${env}
