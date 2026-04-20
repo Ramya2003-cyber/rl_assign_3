@@ -4,6 +4,7 @@ import random
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from omegaconf import OmegaConf
 from envs.pendulum_custom import TargetAnglePendulum
 from agent.sac import SACAgent
 import gymnasium as gym
@@ -57,13 +58,15 @@ def main(cfg):
         action_dim = env.action_space.shape[0]
         action_range = [float(env.action_space.low.min()), float(env.action_space.high.max())]
         
-        replay_buf = ReplayBuffer(obs_dim, action_dim, cfg.replay_buffer_capacity, cfg.device)
-        
+        replay_buf = ReplayBuffer(env.observation_space.shape, env.action_space.shape, int(cfg.replay_buffer_capacity), cfg.device)
+        OmegaConf.set_struct(cfg, False) # Allow adding/modifying keys
+        cfg.agent.obs_dim = obs_dim
+        cfg.agent.action_dim = action_dim
+        cfg.agent.action_range = action_range
+
+        # 2. Now instantiate without passing the dims as kwargs (they are in the cfg now)
         sac_agent = hydra.utils.instantiate(
             cfg.agent, 
-            obs_dim=obs_dim, 
-            action_dim=action_dim, 
-            action_range=action_range,
             learnable_temperature=cfg.custom.auto_tune,
             init_temperature=cfg.custom.alpha
         )
@@ -75,7 +78,7 @@ def main(cfg):
             action = sac_agent.act(obs, sample=True)
             next_obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
-            replay_buf.add(obs, action, reward, next_obs, done)
+            replay_buf.add(obs, action, reward, next_obs, done,terminated)
             obs = next_obs
             
             if i >= cfg.agent.batch_size:

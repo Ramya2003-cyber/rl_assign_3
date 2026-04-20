@@ -1,3 +1,12 @@
-pytorch
-tensorflow
+# Core Computation & Deep Learning
+numpy
+torch
+
+# Reinforcement Learning Environments
 gymnasium
+
+# Configuration Management
+hydra-core
+
+# Data Visualization (For your upcoming Q3/Q4/Q5 plots)
+matplotlib

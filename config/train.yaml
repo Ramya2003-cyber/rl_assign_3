@@ -1,39 +1,37 @@
 defaults:
-    - agent: sac
+  - agent: sac
+  - _self_
 
-env: cheetah_run
-
-# this needs to be specified manually
+env: pendulum_v1
 experiment: test_exp
 
-num_train_steps: 1e6
-replay_buffer_capacity: ${num_train_steps}
+# Use plain integers to avoid "float object" errors
+num_train_steps: 1000000
+replay_buffer_capacity: 1000000
 
 num_seed_steps: 5000
-
 eval_frequency: 10000
-num_eval_episodes: 10
+num_eval_episodes: 20
 
 device: cuda
 
-# logger
+# logger (your script uses DummyLogger, but keep these for safety)
 log_frequency: 10000
-log_save_tb: true
-
-# video recorder
-save_video: true
-
+log_save_tb: false
+save_video: false
 
 seed: 1
 
+# Your custom parameters for run_pendulum.py
 custom:
   target_angle: 90
   reward_scale: 1.0
   auto_tune: true
   alpha: 0.1
-  
-# hydra configuration
+
+# Modern Hydra configuration
 hydra:
+  job:
     name: ${env}
-    run:
-        dir: ./exp/${now:%Y.%m.%d}/${now:%H%M}_${agent.name}_${experiment}
+  run:
+    dir: runs/${now:%H%M%S}_${hydra.job.name}

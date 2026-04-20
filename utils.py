@@ -3,13 +3,12 @@ import torch
 from torch import nn
 from torch import distributions as pyd
 import torch.nn.functional as F
-import gym
+import gymnasium as gym
 import os
 from collections import deque
 import random
 import math
 
-import dmc2gym
 
 
 def make_env(cfg):
