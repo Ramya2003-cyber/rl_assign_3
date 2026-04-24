@@ -40,10 +40,15 @@ def evaluate(agent, env, num_episodes=20):
 
 @hydra.main(config_path="../config", config_name="train", version_base=None)
 def main(cfg):
-    all_results = []
     dummy_logger = DummyLogger() # Instantiate the safety logger
+    filename = f"results_angle_{cfg.custom.target_angle}_auto_{cfg.custom.auto_tune}_alpha_{cfg.custom.alpha}_scale_{cfg.custom.reward_scale}.npy"
+    if os.path.exists(filename):
+        results_list = list(np.load(filename))
+        print(f"Found existing progress: {len(results_list)} seeds already done.")
+    else:
+        results_list = []
 
-    for seed in range(1, 16):
+    for seed in range(len(results_list), 15):
         set_seed(seed)
         
         # CREATE TRAINING ENV (Fixed typo to max_episode_steps)
@@ -93,12 +98,12 @@ def main(cfg):
                 avg_return = evaluate(sac_agent, eval_env, num_episodes=20)
                 seed_evals.append(avg_return)
                 print(f"Seed {seed}, Step {i}, Avg Return: {avg_return}")
+        results_list.append(seed_evals) # your list of evaluation scores
+        np.save(filename, np.array(results_list))
+        print(f"Seed {seed + 1} saved to {filename}")
                 
-        all_results.append(seed_evals)
 
     # Dynamic save
-    filename = f"results_angle_{cfg.custom.target_angle}_auto_{cfg.custom.auto_tune}_alpha_{cfg.custom.alpha}_scale_{cfg.custom.reward_scale}.npy"
-    np.save(filename, all_results)
     print(f"Saved {filename}")
 
 if __name__ == '__main__':

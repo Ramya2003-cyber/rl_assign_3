@@ -40,9 +40,9 @@ def get_best_alpha(angle, test_alphas):
 
 if __name__ == '__main__':
     # ... [Keep your Q2 automated tuning runs here] ...
-    q2_angles = [0, -10, 30, -60, 90, -90, 120, -150]
-    for angle in q2_angles:
-        run_experiment(angle=angle, auto_tune="true")
+    # q2_angles = [0,-10,-60,30,90, -90, 120, -150]
+    # for angle in q2_angles:
+    #     run_experiment(angle=angle, auto_tune="true")
     # ---------------------------------------------------------
     # QUESTION 5(a): The Manual Sweep
     # ---------------------------------------------------------
@@ -56,23 +56,23 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     # THE AUTOMATION INTERCEPT
     # ---------------------------------------------------------
-    print("\n--- AUTOMATICALLY DETERMINING BEST MANUAL ALPHA FOR 90 DEGREES ---")
-    best_guess_manual_alpha = get_best_alpha(angle=90, test_alphas=test_alphas)
-    print(f"--- THE WINNER IS: Alpha {best_guess_manual_alpha} --- \n")
+    # print("\n--- AUTOMATICALLY DETERMINING BEST MANUAL ALPHA FOR 90 DEGREES ---")
+    # best_guess_manual_alpha = get_best_alpha(angle=90, test_alphas=test_alphas)
+    # print(f"--- THE WINNER IS: Alpha {best_guess_manual_alpha} --- \n")
 
     # ---------------------------------------------------------
     # QUESTION 5(b): Reward Scaling (Using the Automated Winner)
     # ---------------------------------------------------------
-    scales = [10.0, 0.1]
+    # scales = [10.0, 0.1]
     
-    # Fallback just in case something broke during the file read
-    if best_guess_manual_alpha is None:
-        best_guess_manual_alpha = 0.1 
+    # # Fallback just in case something broke during the file read
+    # if best_guess_manual_alpha is None:
+    #     best_guess_manual_alpha = 0.1 
         
-    for scale in scales:
-        # Auto-tuned scaling
-        run_experiment(angle=90, auto_tune="true", scale=scale)
-        # Manual-tuned scaling using the auto-selected best alpha!
-        run_experiment(angle=90, auto_tune="false", alpha=best_guess_manual_alpha, scale=scale)
+    # for scale in scales:
+    #     # Auto-tuned scaling
+    #     run_experiment(angle=90, auto_tune="true", scale=scale)
+    #     # Manual-tuned scaling using the auto-selected best alpha!
+    #     run_experiment(angle=90, auto_tune="false", alpha=best_guess_manual_alpha, scale=scale)
 
     print("ALL EXPERIMENTS COMPLETED. GOOD MORNING!")
