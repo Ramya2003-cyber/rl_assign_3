@@ -78,7 +78,9 @@ def main(cfg):
         
         obs, info = env.reset(seed=seed)
         seed_evals = []
-        
+        avg_return = evaluate(sac_agent, eval_env, num_episodes=20)
+        seed_evals.append(avg_return)
+        print(f"Seed {seed}, Step 0, Avg Return: {avg_return}")
         for i in range(1, 100001):
             action = sac_agent.act(obs, sample=True)
             next_obs, reward, terminated, truncated, info = env.step(action)

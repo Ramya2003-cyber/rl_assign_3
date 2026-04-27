@@ -6,3 +6,7 @@ env/
 runs/
 *.npy
 *.png
+angle_120/
+angle_90/
+best_alpha.py
+2.5/
