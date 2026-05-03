@@ -28,6 +28,8 @@ custom:
   reward_scale: 1.0
   auto_tune: true
   alpha: 0.1
+  feedback_budget: 1000
+  segment_length: 50
 
 # Modern Hydra configuration
 hydra:

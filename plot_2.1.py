@@ -8,12 +8,11 @@ def plot_q2_results():
     
     # Pendulum-v1 default evaluation: 100k steps, eval every 10k
     # This matches the 'seed_evals' length of 10 in your run_pendulum.py
-    steps = np.arange(10000, 110000, 10000)
-    
+    steps = np.arange(0, 110000, 10000)    
     plt.figure(figsize=(12, 8))
     
     for angle in angles:
-        filename = f"results_angle_{angle}_auto_True_alpha_0.1_scale_1.0.npy"
+        filename = f"2.2/results_angle_{angle}_auto_True_alpha_0.1_scale_1.0.npy"
         
         if os.path.exists(filename):
             # Load data: shape is (num_seeds, 10)
