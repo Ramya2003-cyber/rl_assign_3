@@ -1,0 +1,28 @@
+# config/reacher.yaml
+# Hydra configuration for run_reacher.py (Question 2.3)
+
+defaults:
+  - agent: sac
+  - _self_
+
+# ── Reacher-specific ────────────────────────────────────────────────────────
+reward_type: a          # override on CLI: reward_type=b  or  reward_type=c
+seed: 1                 # override on CLI: seed=2 … seed=15
+
+# ── Training schedule ────────────────────────────────────────────────────────
+num_train_steps: 500000
+num_seed_steps:   10000      # random exploration before any gradient updates
+eval_frequency:   10000      # cross-evaluate every N global steps
+num_eval_episodes:   20      # deterministic episodes per checkpoint
+
+replay_buffer_capacity: 1000000
+
+# ── Hardware ─────────────────────────────────────────────────────────────────
+device: cuda                  # set to 'cpu' if no GPU available
+
+# ── Hydra output directory ───────────────────────────────────────────────────
+hydra:
+  job:
+    name: reacher_${reward_type}
+  run:
+    dir: runs/reacher/${now:%H%M%S}_${reward_type}_seed${seed}
