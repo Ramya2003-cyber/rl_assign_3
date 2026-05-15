@@ -95,7 +95,9 @@ class ReacherWrapper(gym.Env):
         self._dm_env = suite.load(
             domain_name='reacher',
             task_name='easy',
-            task_kwargs={'random': seed},
+            task_kwargs={'random': seed,
+            'time_limit': float('inf')
+            },
         )
         self._physics = self._dm_env.physics
 

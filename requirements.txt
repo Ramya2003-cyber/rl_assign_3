@@ -10,3 +10,6 @@ hydra-core
 
 # Data Visualization (For your upcoming Q3/Q4/Q5 plots)
 matplotlib
+
+dm_control
+mujoco
