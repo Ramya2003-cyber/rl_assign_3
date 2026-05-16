@@ -10,8 +10,13 @@ angle_120/
 angle_90/
 best_alpha.py
 2.5/
-angle_60/
+angle_-60/
 reacher-a/
 reacher-b/
 reacher-c/
 test*
+angle_120/
+angle_90/
+angle_-150/
+pebble-pendulum/
+pebble-reacher/
