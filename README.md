@@ -1,184 +1,284 @@
-# LunarLander Experiments for PA3
+# DA6400 Reinforcement Learning - Programming Assignment 3
 
-This folder contains the LunarLander part of Programming Assignment 3 for
-Reinforcement Learning. It includes code, configs, scripts, saved logs, and
-plotting utilities for the SAC experiments in Question 2.2.
+This repository contains the code for Programming Assignment 3. The work is organized by assignment part: modified Pendulum with SAC, LunarLander SAC/DQN experiments, Reacher reward-formulation experiments, and the PEBBLE bonus experiments.
 
-The experiments covered here are:
+## Team Members and Contributions
 
-- Q2.2.1 and Q2.2.2: continuous SAC on `LunarLanderContinuous-v3`
-- Q2.2.3: hover reward variant with fixed and automatic temperature SAC
-- Q2.2.4: discrete SAC on `LunarLander-v3`
-- Q2.2.4 comparison baseline: DQN on `LunarLander-v3`
+- Sinigi Ramya Sri (`CS25M049`) - Part 1 Pendulum, Part 3 Reacher, and Bonus PEBBLE experiments
+- Kaki Hephzi Sunanda (`DA25M015`) - Part 2 LunarLander experiments
 
-The SAC implementation is based on the PyTorch SAC code structure from
-`https://github.com/denisyarats/pytorch_sac`, adapted for the assignment tasks.
-
-## Folder Structure
+## Repository Structure
 
 ```text
-q2_lunar_lander/
+rl_assign_3/
 ├── README.md
-├── generate_report_plots.py
-├── q2_2_1_continuous_sac/
-│   └── pytorch_sac/
-│       ├── agent/
-│       ├── config/
-│       ├── exp_local/
-│       ├── data/
-│       ├── train.py
-│       ├── run_baseline.sh
-│       ├── requirements.txt
-│       └── conda_env.yml
-├── q2_2_3_hover_reward_flip/
-│   └── pytorch_sac/
-│       ├── agent/
-│       ├── config/
-│       ├── exp_local/
-│       ├── hover_wrapper.py
-│       ├── train.py
-│       ├── run_hover_auto.sh
-│       ├── run_hover_fixed.sh
-│       ├── requirements.txt
-│       └── conda_env.yml
-└── q2_2_4_discrete_sac_vs_dqn/
-    ├── discrete_sac/
-    │   ├── agent/
-    │   ├── config/
-    │   ├── exp_local/
-    │   ├── train.py
-    │   ├── run_discrete_sac.sh
-    │   ├── requirements.txt
-    │   └── conda_env.yml
-    ├── dqn/
-    │   ├── dqn_agent.py
-    │   ├── train.py
-    │   └── run_dqn.sh
-    ├── plot_eval_comparison.py
-    ├── plot_training_comparison.py
-    └── plot_mixed_comparison.py
+├── requirements.txt
+├── agent/
+│   ├── actor.py
+│   ├── critic.py
+│   ├── sac.py
+│   ├── reward_net.py
+│   └── preference_buffer.py
+├── envs/
+│   ├── pendulum_custom.py
+│   ├── reacher_custom.py
+│   └── simulated_teacher.py
+├── config/
+│   ├── train.yaml
+│   ├── reacher.yaml
+│   ├── pebble_reacher.yaml
+│   └── agent/sac.yaml
+├── scripts/
+│   ├── run_pendulum.py
+│   └── run_human_render.py
+├── part2_lunarlander/
+│   ├── README.md
+│   ├── generate_report_plots.py
+│   ├── images/
+│   ├── q2_2_1_continuous_sac/
+│   ├── q2_2_3_hover_reward_flip/
+│   └── q2_2_4_discrete_sac_vs_dqn/
+├── run_2.1.py
+├── run_reacher.py
+├── run_pebble.py
+├── run_pebble_reacher.py
+├── plot_2.1.py
+├── plot_q5_manual.py
+├── plot_2.3.py
+├── plot_q3c_cross_eval.py
+└── plot_pebble_reacher.py
 ```
 
-The `exp_local/` folders contain saved training and evaluation logs from the
-runs. The generated report plots are saved in the root-level `images/` folder.
+The `part2_lunarlander/` folder contains the LunarLander files that were prepared as the separate LunarLander submission package. Its own README gives the detailed LunarLander-only structure and commands.
 
 ## Environment Details
 
-The main environments used are:
+The main Python dependencies are listed in `requirements.txt`. The experiments use:
 
-- `LunarLanderContinuous-v3` for continuous SAC
-- `LunarLanderContinuous-v3` with a custom hover reward wrapper for Q2.2.3
-- `LunarLander-v3` for discrete SAC and DQN
+- PyTorch for SAC, reward models, actors, and critics
+- Gymnasium for Pendulum and LunarLander environments
+- DeepMind Control Suite for Reacher
+- Hydra/OmegaConf for configuration
+- NumPy, Pandas, and Matplotlib for saved results and plots
 
-Important assignment settings:
-
-- Discount factor: `0.99`
-- Initial random exploration for SAC: `10000` environment steps
-- Offline evaluation frequency: every `10000` environment steps
-- Evaluation episodes: `20`
-- Number of seeds used for final experiments: `15`
-
-Each SAC folder includes both `requirements.txt` and `conda_env.yml`. A typical
-setup is:
+Typical setup:
 
 ```bash
-cd q2_lunar_lander/q2_2_1_continuous_sac/pytorch_sac
-conda env create -f conda_env.yml
-conda activate pytorch_sac
+cd rl_assign_3
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-If using `pip`, install the required packages from the relevant
-`requirements.txt` file inside the experiment folder.
+For LunarLander, use the environment files inside the specific `part2_lunarlander/` experiment folders if needed.
 
-## How to Run
+## Part 1: Pendulum
 
-Run commands from inside the corresponding experiment folder.
+This part modifies `Pendulum-v1` so that the target angle can be changed. The custom environment wrapper is:
 
-### Continuous SAC Baseline
+```text
+envs/pendulum_custom.py
+```
+
+It uses the shaped reward
+
+```text
+-(angle_error^2 + 0.1 * angular_velocity^2 + 0.001 * action^2)
+```
+
+where the angular error is wrapped to the shortest direction around the circle.
+
+### SAC With Automated Temperature Tuning
+
+Run one Pendulum experiment:
 
 ```bash
-cd q2_lunar_lander/q2_2_1_continuous_sac/pytorch_sac
+python scripts/run_pendulum.py custom.target_angle=90 custom.auto_tune=true
+```
+
+Run the full Part 1 sweep script:
+
+```bash
+python run_2.1.py
+```
+
+Useful parameters:
+
+```bash
+custom.target_angle=90
+custom.auto_tune=true
+custom.alpha=0.1
+custom.reward_scale=1.0
+```
+
+### Manual Temperature Tuning and Reward Scaling
+
+Manual temperature tuning uses fixed values of alpha for target angles such as `-150`, `-60`, `90`, and `120`.
+
+Example fixed-alpha run:
+
+```bash
+python scripts/run_pendulum.py custom.target_angle=90 custom.auto_tune=false custom.alpha=0.05
+```
+
+Reward scaling runs can be launched by changing `custom.reward_scale`:
+
+```bash
+python scripts/run_pendulum.py custom.target_angle=90 custom.auto_tune=true custom.reward_scale=0.1
+python scripts/run_pendulum.py custom.target_angle=90 custom.auto_tune=true custom.reward_scale=10.0
+```
+
+Plot helpers:
+
+```bash
+python plot_2.1.py
+python plot_q5_manual.py
+```
+
+## Part 2: Soft Actor-Critic on LunarLander
+
+The LunarLander code is kept under:
+
+```text
+part2_lunarlander/
+```
+
+This section contains the assignment experiments:
+
+- `2.2.1`: Continuous SAC on `LunarLanderContinuous-v3`
+- `2.2.2`: Stages of SAC behavior during learning
+- `2.2.3`: Hover reward modification and reward flip
+- `2.2.4`: Discrete SAC on `LunarLander-v3`
+- `2.2.4`: DQN baseline comparison
+
+### 2.2.1 Continuous SAC Baseline
+
+```bash
+cd part2_lunarlander/q2_2_1_continuous_sac/pytorch_sac
 bash run_baseline.sh
 ```
 
-Single seed example:
+Single-seed example:
 
 ```bash
 python train.py env=LunarLanderContinuous-v3 seed=1 experiment=baseline
 ```
 
-### Hover Reward Flip Experiment
+### 2.2.3 Hover Reward Flip
 
 Automatic temperature SAC:
 
 ```bash
-cd q2_lunar_lander/q2_2_3_hover_reward_flip/pytorch_sac
+cd part2_lunarlander/q2_2_3_hover_reward_flip/pytorch_sac
 bash run_hover_auto.sh
 ```
 
 Fixed temperature SAC:
 
 ```bash
-cd q2_lunar_lander/q2_2_3_hover_reward_flip/pytorch_sac
+cd part2_lunarlander/q2_2_3_hover_reward_flip/pytorch_sac
 bash run_hover_fixed.sh
 ```
 
-The hover wrapper gives a one-time hover reward when the lander enters the box
-`|x| < 0.1` and `0.4 < |y| < 0.6`. During training, the reward changes from
-`+200` to `-100` at the configured switch point.
+### 2.2.4 Discrete SAC and DQN
 
-### Discrete SAC
+Discrete SAC:
 
 ```bash
-cd q2_lunar_lander/q2_2_4_discrete_sac_vs_dqn/discrete_sac
+cd part2_lunarlander/q2_2_4_discrete_sac_vs_dqn/discrete_sac
 bash run_discrete_sac.sh
 ```
 
-### DQN Baseline
+DQN baseline:
 
 ```bash
-cd q2_lunar_lander/q2_2_4_discrete_sac_vs_dqn/dqn
+cd part2_lunarlander/q2_2_4_discrete_sac_vs_dqn/dqn
 bash run_dqn.sh
 ```
 
-## Plot Generation
-
-The report plots can be regenerated from the saved CSV logs with:
+Regenerate LunarLander report plots:
 
 ```bash
-python3 q2_lunar_lander/generate_report_plots.py
+python part2_lunarlander/generate_report_plots.py
 ```
 
-This script reads the saved logs under the experiment folders and writes plots
-to:
+## Part 3: Reacher
+
+This part uses the easy Reacher environment and compares three reward formulations:
+
+- `Ra`: dense distance-based reward
+- `Rb`: sparse reward for being inside the target
+- `Rc`: time/velocity-based reward that requires reaching and stabilizing
+
+The custom wrapper is:
 
 ```text
-images/
+envs/reacher_custom.py
 ```
 
-The plots use mean returns with confidence intervals across seeds.
+Run SAC for each reward formulation:
 
-## Notes on Saved Logs
+```bash
+python run_reacher.py reward_type=a seed=1
+python run_reacher.py reward_type=b seed=1
+python run_reacher.py reward_type=c seed=1
+```
 
-The repository includes saved logs from completed and partial runs. The discrete
-SAC and DQN experiments have full evaluation logs for all 15 seeds.
+The script saves files of the form:
 
-For the continuous SAC baseline and some hover runs, older logs may have missing
-offline evaluation rows because evaluation was originally tied to episode
-boundaries. The training code has been updated so future runs trigger evaluation
-by timestep using `_next_eval_step`.
+```text
+reacher_results_<reward_type>_seed_<seed>.npy
+```
 
-When evaluation logs are incomplete, the plotting script uses the available
-saved CSV data and avoids synthetic or manually created return values.
+Plot and evaluation helpers:
 
-## Files Not Needed for Submission
+```bash
+python eval_q3_reacher.py
+python plot_2.3.py
+python plot_q3c_cross_eval.py
+```
 
-The final zip should exclude local cache and environment files such as:
+## Bonus: PEBBLE
 
-- `__pycache__/`
-- `.pyc` files
-- `.venv/`
-- `.git/`
-- local tokens or private files
+The bonus experiments implement preference-based reward learning with a simulated teacher.
 
-These files are not required to reproduce the experiments.
+Main files:
+
+```text
+agent/reward_net.py
+agent/preference_buffer.py
+envs/simulated_teacher.py
+run_pebble.py
+run_pebble_reacher.py
+reward_model.py
+```
+
+### PEBBLE on Pendulum
+
+Example run:
+
+```bash
+python run_pebble.py custom.target_angle=90 custom.feedback_budget=1000 seed=1
+```
+
+Feedback budget experiments use values such as `100`, `500`, and `1000`.
+
+### PEBBLE on Reacher
+
+```bash
+python run_pebble_reacher.py reward_type=a seed=1
+python run_pebble_reacher.py reward_type=b seed=1
+python run_pebble_reacher.py reward_type=c seed=1
+```
+
+Plot helper:
+
+```bash
+python plot_pebble_reacher.py
+```
+
+## Notes
+
+- Generated `.npy` result files, `.png` plots, local environments, TensorBoard logs, and temporary training outputs are ignored by git where appropriate.
+- Saved model checkpoints for Reacher are included where useful for evaluation.
+- The LunarLander package intentionally lives under `part2_lunarlander/` so all Part 2 files are grouped in one place instead of being scattered across the repository root.
