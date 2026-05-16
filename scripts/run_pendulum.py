@@ -9,7 +9,7 @@ from omegaconf import OmegaConf
 from envs.pendulum_custom import TargetAnglePendulum
 from agent.sac import SACAgent
 import gymnasium as gym
-from replay_buffer import ReplayBuffer
+from agent.replay_buffer import ReplayBuffer
 import hydra
 
 # Tiny mock logger to prevent SAC from crashing when it tries to log metrics

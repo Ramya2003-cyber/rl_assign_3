@@ -1,16 +1,4 @@
-"""
-envs/reacher_custom.py
-======================
-Gym-like wrapper around dm_control's reacher (easy) environment.
 
-Supports three reward formulations:
-  Ra  – distance penalty      (truncated at 1000 steps, no early termination)
-  Rb  – sparse binary reward  (truncated at 1000 steps, no early termination)
-  Rc  – step penalty          (episode terminates only on reaching target with
-                               near-zero velocity; timeout at 1000 steps applies
-                               a -20 penalty and partially resets the arm while
-                               keeping the target fixed — the episode continues)
-"""
 
 from __future__ import annotations
 
@@ -20,19 +8,12 @@ from gymnasium import spaces
 from dm_control import suite
 
 
-# ---------------------------------------------------------------------------
-# Helpers for extracting structured physics quantities from dm_control
-# ---------------------------------------------------------------------------
 
 def _get_physics_quantities(physics) -> dict:
     """Extract raw physics quantities needed for all reward computations."""
-    # Fingertip (end-effector) position in 2-D task plane (x, y)
     finger_pos = physics.named.data.geom_xpos['finger', :2].copy()
-    # Target position in 2-D task plane
     target_pos = physics.named.data.geom_xpos['target', :2].copy()
-    # Velocity of the fingertip (for Rc terminal condition)
-    finger_vel = physics.named.data.geom_xpos['finger', :2].copy()  # placeholder
-    # Use joint velocities as a proxy for arm velocity
+    finger_vel = physics.named.data.geom_xpos['finger', :2].copy()
     joint_vel = physics.data.qvel[:].copy()
     return {
         'finger_pos': finger_pos,
@@ -60,13 +41,9 @@ def _in_target(dm_env, physics) -> bool:
 class ReacherWrapper(gym.Env):
    
 
-    # Threshold used by Rc to decide "near-zero velocity" for termination.
-    _VEL_THRESHOLD: float = 0.05
-    # Radius threshold for "in-target" when the task does not expose its own.
+    _VEL_THRESHOLD: float = 0.05       # near-zero velocity threshold for Rc termination
     _DIST_THRESHOLD: float = 0.05
-    # Maximum steps per timeout window for Ra / Rb (and Rc's partial-reset trigger).
     _MAX_EPISODE_STEPS: int = 1000
-    # Timeout penalty applied by Rc.
     _TIMEOUT_PENALTY: float = -20.0
 
     def __init__(self, reward_type: str = 'a', seed: int = 0):
@@ -77,7 +54,6 @@ class ReacherWrapper(gym.Env):
         self.reward_type = reward_type
         self._seed = seed
 
-        # ── Build dm_control environment ────────────────────────────────────
         self._dm_env = suite.load(
             domain_name='reacher',
             task_name='easy',
@@ -87,7 +63,6 @@ class ReacherWrapper(gym.Env):
         )
         self._physics = self._dm_env.physics
 
-        # ── Derive Gym spaces from dm_control specs ──────────────────────────
         obs_spec = self._dm_env.observation_spec()
         obs_dim = sum(int(np.prod(v.shape)) for v in obs_spec.values())
 
@@ -103,14 +78,12 @@ class ReacherWrapper(gym.Env):
             dtype=np.float32,
         )
 
-        # Episode counters (public so the training loop can read them)
-        self._step_count: int = 0          # steps since last *full* reset
-        self._timeout_count: int = 0       # number of Rc timeouts in this episode
-        # Store current obs so we can compute the cross-eval reward outside step()
+        self._step_count: int = 0
+        self._timeout_count: int = 0
         self._last_obs: np.ndarray | None = None
         self._last_action: np.ndarray | None = None
 
-    # ── Internal helpers ────────────────────────────────────────────────────
+
 
     def _flatten_obs(self, time_step) -> np.ndarray:
         """Flatten all dm_control observation arrays into a single vector."""
@@ -144,15 +117,11 @@ class ReacherWrapper(gym.Env):
     def _partial_reset_arm(self):
 
         with self._physics.reset_context():
-            # Preserve target qpos (indices 2 and 3 in the reacher model)
             target_qpos = self._physics.data.qpos[2:].copy()
-            # Randomise arm joints uniformly
             self._physics.data.qpos[:2] = self._dm_env.task.random.uniform(
                 low=-np.pi, high=np.pi, size=2
             )
-            # Zero arm velocities (clean start for the new attempt)
             self._physics.data.qvel[:2] = 0.0
-            # Restore target
             self._physics.data.qpos[2:] = target_qpos
 
     def _obs_from_physics(self) -> np.ndarray:
@@ -160,7 +129,7 @@ class ReacherWrapper(gym.Env):
         obs_dict = self._dm_env.task.get_observation(self._physics)
         parts = [np.atleast_1d(v).ravel() for v in obs_dict.values()]
         return np.concatenate(parts).astype(np.float32)
-    # ── Gym interface ───────────────────────────────────────────────────────
+
 
     def reset(self, *, seed=None, options=None):
         """Full episode reset."""
@@ -176,20 +145,7 @@ class ReacherWrapper(gym.Env):
         return obs, {}
 
     def step(self, action: np.ndarray):
-        """
-        Step the environment.
-
-        Returns the standard 5-tuple:
-            obs, reward, terminated, truncated, info
-
-        The ``done`` flag passed to the replay buffer should be
-        ``terminated or truncated``.
-
-        For Rc, ``truncated`` is *never* True from here (the episode continues
-        after a timeout).  The training loop must handle the case that it has
-        run for 1000 steps on the current episode without success, but from the
-        perspective of the replay buffer each step is a normal transition.
-        """
+        """Step the environment; returns (obs, reward, terminated, truncated, info)."""
         self._last_action = action
         action_clipped = np.clip(action, self.action_space.low, self.action_space.high)
 
@@ -201,27 +157,20 @@ class ReacherWrapper(gym.Env):
         all_rewards = self._compute_all_rewards(action_clipped)
         in_target = self._arm_in_target()
 
-        # ── Rc logic ──────────────────────────────────────────────────────
         if self.reward_type == 'c':
-            reward = all_rewards['c']  # -1 per step
+            reward = all_rewards['c']
             arm_vel = self._arm_velocity()
             terminal = in_target and (arm_vel < self._VEL_THRESHOLD)
 
             if terminal:
-                # True episode termination — agent reached goal with near-zero vel
                 terminated = True
                 truncated = False
                 info = {'in_target': True, 'timeout': False, 'all_rewards': all_rewards}
             elif self._step_count % self._MAX_EPISODE_STEPS == 0:
-                # ── Timeout: apply penalty + partial reset, episode continues ──
+                # Timeout: apply penalty + partial reset, episode continues
                 reward += self._TIMEOUT_PENALTY
                 self._timeout_count += 1
                 self._partial_reset_arm()
-                # Re-derive next-obs from current (post-reset) physics state.
-                # We do NOT issue another dm_env.step; instead we build the
-                # observation by reading the physics quantities directly,
-                # which is equivalent to the observation the agent would see
-                # at the start of the next sub-episode.
                 obs = self._obs_from_physics()
                 self._last_obs = obs
                 terminated = False
@@ -238,10 +187,9 @@ class ReacherWrapper(gym.Env):
                 truncated = False
                 info = {'in_target': in_target, 'timeout': False, 'all_rewards': all_rewards}
 
-        # ── Ra / Rb logic ──────────────────────────────────────────────────
         else:
             reward = all_rewards[self.reward_type]
-            terminated = False  # no early termination for Ra / Rb
+            terminated = False
             truncated = self._step_count >= self._MAX_EPISODE_STEPS
             info = {'in_target': in_target, 'timeout': False, 'all_rewards': all_rewards}
 
@@ -264,7 +212,6 @@ class ReacherWrapper(gym.Env):
     def close(self):
         pass
 
-    # Expose max episode steps so the training loop can access it cleanly
     @property
     def max_episode_steps(self) -> int:
         return self._MAX_EPISODE_STEPS

@@ -1,46 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_pebble_reacher.py
-=====================
-PEBBLE (Lee et al., 2021) on dm_control Reacher-easy with the three reward
-formulations defined in the course assignment (Ra, Rb, Rc).
 
-Usage
------
-    python run_pebble_reacher.py reward_type=a seed=1 pebble.max_feedback=2000
-    python run_pebble_reacher.py reward_type=b seed=1
-    python run_pebble_reacher.py reward_type=c seed=1
-
-Key design decisions
---------------------
-1. Buffer relabelling – every time the Reward Model is updated the *entire*
-   replay buffer is relabelled with r_θ(s,a).  This is essential because SAC
-   is off-policy: stale rewards in the buffer would cause divergence.
-
-2. Validation tracking – the RM trains on 90 % of the preference dataset and
-   monitors validation accuracy on the remaining 10 %.  This detects reward-
-   model collapse early.
-
-3. Ground-truth teacher – the SimulatedTeacher sums the raw environment
-   rewards over a segment and returns 1/0/0.5.  For formulation 'c', the
-   -20 timeout penalty is included naturally because it is part of the reward
-   stored in `gt_rewards`.
-
-4. Formulation 'c' partial reset – because 'c' episodes never terminate by
-   timeout the episodes are long-running; the buffer captures whatever
-   happened within that window, timeout penalties included.
-
-Output
-------
-pebble_reacher_<reward_type>_seed_<seed>.npy
-    Numpy dict with:
-        'gt_returns'       : (num_checkpoints, 3)  – mean GT returns per reward type
-        'checkpoint_steps' : (num_checkpoints,)
-        'rm_train_acc'     : list of per-RM-update train accuracy lists
-        'rm_val_acc'       : list of per-RM-update val accuracy lists
-        'reward_type'      : str
-        'seed'             : int
-"""
 
 from __future__ import annotations
 
@@ -56,16 +15,13 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # ── Make sure the project root is importable ────────────────────────────────
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from envs.reacher_custom import ReacherWrapper
-from reward_model import RewardModel, SimulatedTeacher, PreferenceDataset, PEBBLEReplayBuffer
-import utils
+from agent.reward_model import RewardModel, SimulatedTeacher, PreferenceDataset, PEBBLEReplayBuffer
+from core import utils
 
 
-# ---------------------------------------------------------------------------
-# Minimal logger stub (matches the interface SAC.update_* methods expect)
-# ---------------------------------------------------------------------------
 
 class DummyLogger:
     def log(self, *a, **kw): pass
@@ -74,9 +30,6 @@ class DummyLogger:
     def dump(self, *a, **kw): pass
 
 
-# ---------------------------------------------------------------------------
-# Cross-evaluation helper (ground-truth returns on all three reward types)
-# ---------------------------------------------------------------------------
 
 def evaluate_gt_returns(
     agent,
@@ -85,14 +38,7 @@ def evaluate_gt_returns(
     rc_step_limit: int = 1_000,
     rc_timeout_penalty: float = -20.0,
 ) -> dict[str, float]:
-    """
-    Run ``num_episodes`` deterministic episodes on the *training* environment.
-    Collect the ground-truth return for all three reward formulations
-    simultaneously via ``info['all_rewards']``.
-
-    For formulation 'c' evaluation episodes are capped at ``rc_step_limit``
-    steps; if they exceed it a single ``rc_timeout_penalty`` is added to Ra.
-    """
+   
     eval_env = ReacherWrapper(reward_type=reward_type, seed=0)
     sums = {"a": [], "b": [], "c": []}
 
@@ -130,9 +76,6 @@ def evaluate_gt_returns(
     return {k: float(np.mean(v)) for k, v in sums.items()}
 
 
-# ---------------------------------------------------------------------------
-# PEBBLE SAC update (uses RM rewards already in the buffer)
-# ---------------------------------------------------------------------------
 
 def pebble_sac_update(agent, replay_buffer: PEBBLEReplayBuffer, logger, step: int):
     """One SAC gradient step using the (relabelled) buffer rewards."""
@@ -147,9 +90,6 @@ def pebble_sac_update(agent, replay_buffer: PEBBLEReplayBuffer, logger, step: in
         utils.soft_update_params(agent.critic, agent.critic_target, agent.critic_tau)
 
 
-# ---------------------------------------------------------------------------
-# PEBBLE Reward Model update: query teacher → add to dataset → fit RM → relabel
-# ---------------------------------------------------------------------------
 
 def update_reward_model(
     reward_model: RewardModel,
@@ -162,16 +102,7 @@ def update_reward_model(
     rm_batch_size: int,
     verbose: bool = True,
 ) -> dict | None:
-    """
-    1. Sample ``queries_per_update`` segment pairs from the replay buffer.
-    2. Ask the teacher to label each pair.
-    3. Add labelled pairs to ``pref_dataset``.
-    4. Fit the reward model on ``pref_dataset``.
-    5. **Relabel the replay buffer** with the updated r_θ.
-
-    Returns the training history dict from ``RewardModel.fit``, or None if
-    no new labels were added (e.g. budget exhausted, too few transitions).
-    """
+   
     # ── Gather new preferences ────────────────────────────────────────────────
     new_labels = 0
     for _ in range(queries_per_update):
@@ -224,23 +155,18 @@ def update_reward_model(
     return history
 
 
-# ---------------------------------------------------------------------------
-# Main training loop
-# ---------------------------------------------------------------------------
 
 def run(cfg: DictConfig):
     reward_type: str = cfg.reward_type
     seed:        int = int(cfg.seed)
     device_str:  str = cfg.get("device", "cpu")
 
-    # ── Training schedule ────────────────────────────────────────────────────
     num_train_steps:      int = int(cfg.get("num_train_steps",      500_000))
     num_seed_steps:       int = int(cfg.get("num_seed_steps",        10_000))
     eval_frequency:       int = int(cfg.get("eval_frequency",        10_000))
     num_eval_episodes:    int = int(cfg.get("num_eval_episodes",         10))
     replay_buffer_cap:    int = int(cfg.get("replay_buffer_capacity", 1_000_000))
 
-    # ── PEBBLE hyper-parameters ───────────────────────────────────────────────
     pebble_cfg                = cfg.get("pebble", {})
     max_feedback:       int   = int(pebble_cfg.get("max_feedback",       2_000))
     seg_len:            int   = int(pebble_cfg.get("seg_len",               50))
@@ -312,19 +238,16 @@ def run(cfg: DictConfig):
 
     logger = DummyLogger()
 
-    # ── Results storage ───────────────────────────────────────────────────────
     gt_returns_log   = []      # list of dicts {'a': float, 'b': float, 'c': float}
     checkpoint_steps = []
     rm_history_log   = []      # one entry per RM update; each is fit() history dict
 
-    # ── Baseline evaluation at step 0 ────────────────────────────────────────
     print("  [Eval @ step 0]")
     gt = evaluate_gt_returns(agent, reward_type, num_eval_episodes)
     gt_returns_log.append(gt)
     checkpoint_steps.append(0)
     print(f"  GT returns  Ra={gt['a']:.2f}  Rb={gt['b']:.2f}  Rc={gt['c']:.2f}")
 
-    # ── Main loop ─────────────────────────────────────────────────────────────
     global_step        = 0
     next_eval_at       = eval_frequency
     next_feedback_at   = num_seed_steps + feedback_freq   # first RM update after seed phase

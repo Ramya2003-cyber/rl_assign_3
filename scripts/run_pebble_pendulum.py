@@ -9,11 +9,11 @@ import gymnasium as gym
 import hydra
 
 # Allow importing from current directory
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import standard SAC and Buffers
 from agent.sac import SACAgent
-from replay_buffer import ReplayBuffer
+from agent.replay_buffer import ReplayBuffer
 
 # Import Custom Environment
 from envs.pendulum_custom import TargetAnglePendulum
@@ -22,7 +22,7 @@ from envs.pendulum_custom import TargetAnglePendulum
 from agent.reward_net import RewardNet
 from agent.preference_buffer import PreferenceBuffer
 from envs.simulated_teacher import SimulatedTeacher
-import utils
+from core import utils
 
 # Tiny mock logger to prevent SAC from crashing when it tries to log metrics
 class DummyLogger:

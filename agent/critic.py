@@ -3,7 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-import utils
+from core import utils
 
 
 class DoubleQCritic(nn.Module):

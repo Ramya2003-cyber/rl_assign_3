@@ -11,9 +11,9 @@ import time
 import pickle as pkl
 
 from video import VideoRecorder
-from logger import Logger
-from replay_buffer import ReplayBuffer
-import utils
+from core.logger import Logger
+from agent.replay_buffer import ReplayBuffer
+from core import utils
 
 import dmc2gym
 import hydra
