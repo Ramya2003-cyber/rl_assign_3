@@ -276,9 +276,3 @@ Plot helper:
 ```bash
 python plot_pebble_reacher.py
 ```
-
-## Notes
-
-- Generated `.npy` result files, `.png` plots, local environments, TensorBoard logs, and temporary training outputs are ignored by git where appropriate.
-- Saved model checkpoints for Reacher are included where useful for evaluation.
-- The LunarLander package intentionally lives under `part2_lunarlander/` so all Part 2 files are grouped in one place instead of being scattered across the repository root.
