@@ -1,0 +1,6 @@
+- env=LunarLander-v3
+- experiment=discrete_sac
+- seed=10
+- num_train_steps=300000
+- num_seed_steps=10000
+- num_eval_episodes=20

@@ -1,0 +1,3 @@
+- env=LunarLander-v3
+- experiment=test_discrete
+- seed=1

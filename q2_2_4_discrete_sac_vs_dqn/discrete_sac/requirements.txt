@@ -1,0 +1,11 @@
+gymnasium[box2d]
+hydra-core
+pandas
+matplotlib
+seaborn
+imageio 
+imageio-ffmpeg
+omegaconf 
+tensorboard
+termcolor
+moviepy

@@ -1,0 +1,5 @@
+- env=LunarLanderContinuous-v3
+- seed=7
+- experiment=baseline
+- num_train_steps=300000
+- log_save_tb=false

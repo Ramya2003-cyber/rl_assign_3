@@ -1,0 +1,53 @@
+env: LunarLanderContinuous-v2
+action_repeat: 1
+num_train_steps: 500000
+num_seed_steps: 10000
+eval_frequency: 10000
+num_eval_episodes: 20
+device: cuda
+log_save_tb: true
+save_video: false
+log_frequency: 10000
+experiment: baseline_seed_2
+replay_buffer_capacity: 1000000
+batch_size: 256
+seed: 2
+discount: 0.99
+agent:
+  name: sac
+  _target_: sac.SAC
+  params:
+    obs_dim: ???
+    action_dim: ???
+    action_range: ???
+    device: ${device}
+    critic_cfg: ${agent.params.critic}
+    actor_cfg: ${agent.params.actor}
+    discount: ${discount}
+    init_temperature: 0.1
+    alpha_lr: 0.0001
+    alpha_beta: 0.5
+    actor_lr: 0.0001
+    actor_beta: 0.9
+    actor_log_std_bounds:
+    - -10
+    - 2
+    critic_lr: 0.0001
+    critic_beta: 0.9
+    critic_tau: 0.005
+    critic_target_update_frequency: 2
+    batch_size: ${batch_size}
+    learnable_temperature: true
+    critic:
+      _target_: sac.Critic
+      obs_dim: ${agent.params.obs_dim}
+      action_dim: ${agent.params.action_dim}
+      hidden_dim: 1024
+      hidden_depth: 2
+    actor:
+      _target_: sac.Actor
+      obs_dim: ${agent.params.obs_dim}
+      action_dim: ${agent.params.action_dim}
+      hidden_dim: 1024
+      hidden_depth: 2
+      log_std_bounds: ${agent.params.actor_log_std_bounds}

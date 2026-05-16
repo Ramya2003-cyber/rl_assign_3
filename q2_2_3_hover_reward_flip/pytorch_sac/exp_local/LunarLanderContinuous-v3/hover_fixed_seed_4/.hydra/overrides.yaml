@@ -1,0 +1,6 @@
+- experiment=hover_fixed
+- seed=4
+- agent.params.learnable_temperature=false
+- agent.params.init_temperature=0.01
+- replay_buffer_capacity=100000
+- num_train_steps=600000

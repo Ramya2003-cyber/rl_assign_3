@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+  - agent: sac
+
+# Main continuous LunarLander setup.
+env: LunarLanderContinuous-v3
+action_repeat: 1
+
+# Training follows the assignment evaluation schedule.
+num_train_steps: 500000
+num_seed_steps: 10000
+eval_frequency: 10000
+num_eval_episodes: 20
+
+device: cuda
+
+log_save_tb: true
+save_video: false
+log_frequency: 10000
+experiment: baseline
+
+replay_buffer_capacity: 1000000
+batch_size: 256
+
+seed: 1
+discount: 0.99
+
+# Keep Hydra output inside this experiment folder.
+hydra:
+  run:
+    dir: ./exp_local/${env}/${experiment}_seed_${seed}
