@@ -136,8 +136,7 @@ def main(cfg):
 
     # Setup saving and evaluations
     eval_results = []
-    filename = f"pebble_results_angle_{cfg.custom.target_angle}_budget_{feedback_budget}.npy"
-
+    filename = f"pebble_results_angle_{cfg.custom.target_angle}_budget_{feedback_budget}_seed_{seed}.npy"
     obs, info = env.reset(seed=seed)
     num_seed_steps = cfg.num_seed_steps # (Phase 1 Steps)
 
