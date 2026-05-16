@@ -1,15 +1,12 @@
-# config/pebble_reacher.yaml
-# Hydra configuration for run_pebble_reacher.py (Bonus: PEBBLE on Reacher)
+
 
 defaults:
   - agent: sac
   - _self_
 
-# ── Reward formulation ────────────────────────────────────────────────────────
 reward_type: a          # override on CLI: reward_type=b  or  reward_type=c
 seed: 1                 # override on CLI: seed=2
 
-# ── Standard SAC training schedule ───────────────────────────────────────────
 num_train_steps:    500000
 num_seed_steps:      10000   # random exploration before any RM or gradient updates
 eval_frequency:      10000   # evaluate ground-truth return every N steps

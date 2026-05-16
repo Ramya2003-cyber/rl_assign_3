@@ -1,31 +1,11 @@
 class SimulatedTeacher:
-    """
-    An Oracle that provides preference labels between pairs of trajectory segments
-    based on a ground-truth reward function, acting as the human teacher in PEBBLE.
-    """
+    
     def __init__(self, feedback_budget):
-        """
-        Args:
-            feedback_budget: Total number of queries the teacher is allowed to answer.
-        """
+       
         self.feedback_budget = feedback_budget
         
     def evaluate_preference(self, segment_A, segment_B, env_reward_function):
-        """
-        Evaluates a preference between two segments using a ground-truth reward function.
-        
-        Args:
-            segment_A: Tuple of (states, actions) representing the first trajectory.
-            segment_B: Tuple of (states, actions) representing the second trajectory.
-            env_reward_function: A function that takes a state and an action and 
-                                 returns the ground-truth reward.
-                                 
-        Returns:
-            label: 1.0 if segment A is strictly preferred over B,
-                   0.0 if segment B is strictly preferred over A,
-                   0.5 if there is a tie.
-            Returns None if the feedback budget is exhausted.
-        """
+       
         if self.feedback_budget <= 0:
             print("Warning: Simulated Teacher feedback budget exhausted.")
             return None

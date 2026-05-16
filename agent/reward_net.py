@@ -19,27 +19,12 @@ class RewardNet(nn.Module):
         self.loss_fn = nn.BCEWithLogitsLoss()
 
     def forward(self, state, action):
-        """
-        Outputs the predicted reward for a given state-action pair.
-        """
+       
         x = torch.cat([state, action], dim=-1)
         return self.net(x)
 
     def preference_loss(self, segment_A, segment_B, labels):
-        """
-        Calculates the Bradley-Terry preference loss between pairs of segments.
         
-        Args:
-            segment_A: Tuple of (states, actions) for trajectory A.
-                       states shape: (batch_size, segment_length, state_dim)
-                       actions shape: (batch_size, segment_length, action_dim)
-            segment_B: Tuple of (states, actions) for trajectory B.
-            labels: Tensor of shape (batch_size, 1). 
-                    1 means A is preferred, 0 means B is preferred, 0.5 is a tie.
-                    
-        Returns:
-            Scalar loss value.
-        """
         states_A, actions_A = segment_A
         states_B, actions_B = segment_B
         

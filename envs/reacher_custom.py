@@ -48,31 +48,17 @@ def _compute_distance(physics) -> float:
 
 
 def _in_target(dm_env, physics) -> bool:
-    """
-    Use the dm_control task's own `within_target` method when available,
-    otherwise fall back to a distance threshold.
-    """
+   
     try:
         return bool(dm_env.task.within_target(physics))
     except AttributeError:
         return _compute_distance(physics) < 0.05
 
 
-# ---------------------------------------------------------------------------
-# ReacherWrapper
-# ---------------------------------------------------------------------------
+
 
 class ReacherWrapper(gym.Env):
-    """
-    Gym-compatible wrapper for dm_control ``reacher`` (easy).
-
-    Parameters
-    ----------
-    reward_type : str
-        One of ``'a'``, ``'b'``, or ``'c'``.
-    seed : int, optional
-        Random seed for the underlying dm_control environment.
-    """
+   
 
     # Threshold used by Rc to decide "near-zero velocity" for termination.
     _VEL_THRESHOLD: float = 0.05
@@ -156,16 +142,7 @@ class ReacherWrapper(gym.Env):
         return {'a': ra, 'b': rb, 'c': rc}
 
     def _partial_reset_arm(self):
-        """
-        Rc partial-reset: randomise the arm joint angles / velocities while
-        keeping the target in exactly the same position.
 
-        dm_control stores the target position in `self._physics.named.data.qpos`.
-        The reacher model uses:
-          qpos[0:2]  – arm joints (angle1, angle2)
-          qpos[2:4]  – target position (x, y) expressed as joint-space offsets
-        We resample only qpos[0:2] and qvel[0:2].
-        """
         with self._physics.reset_context():
             # Preserve target qpos (indices 2 and 3 in the reacher model)
             target_qpos = self._physics.data.qpos[2:].copy()
@@ -179,11 +156,7 @@ class ReacherWrapper(gym.Env):
             self._physics.data.qpos[2:] = target_qpos
 
     def _obs_from_physics(self) -> np.ndarray:
-        """
-        Build an observation vector from the *current* physics state without
-        calling ``dm_env.step`` by dynamically asking the dm_control task.
-        This guarantees the shape exactly matches the standard observation.
-        """
+
         obs_dict = self._dm_env.task.get_observation(self._physics)
         parts = [np.atleast_1d(v).ravel() for v in obs_dict.values()]
         return np.concatenate(parts).astype(np.float32)

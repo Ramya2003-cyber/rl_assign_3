@@ -354,6 +354,18 @@ def run(cfg: DictConfig):
     })
     print(f"\n  Results saved → {out_path}")
     print(f"  Array shape: {results_array.shape}  (checkpoints, reward_types, episodes)")
+
+    # ── Save agent weights for eval_q3_reacher.py ─────────────────────────────
+    weights_path = f"reacher_{reward_type}_seed_{seed}_final.pt"
+    torch.save({
+        'actor_state_dict':         agent.actor.state_dict(),
+        'critic_state_dict':        agent.critic.state_dict(),
+        'critic_target_state_dict': agent.critic_target.state_dict(),
+        'log_alpha':                agent.log_alpha.detach().cpu(),
+        'reward_type':              reward_type,
+        'seed':                     seed,
+    }, weights_path)
+    print(f"  Agent weights saved → {weights_path}")
     print("  Done.\n")
 
 
